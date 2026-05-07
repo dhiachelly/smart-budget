@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Budget & Kcal">
+<meta name="theme-color" content="#0a0a0a">
+<title>Budget & Kcal</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=DM+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{--bg:#0a0a0a;--card:#141414;--card2:#1c1c1c;--border:#252525;--text:#f0f0f0;--muted:#555;--green:#22c55e;--orange:#f59e0b;--red:#ef4444}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;overflow-x:hidden}
+body{padding-bottom:calc(env(safe-area-inset-bottom,0px)+20px)}
+#app{max-width:430px;margin:0 auto;min-height:100vh}
+/* Header */
+.hdr{padding:52px 20px 12px;border-bottom:1px solid var(--border);background:linear-gradient(180deg,#111,var(--bg));position:sticky;top:0;z-index:10;backdrop-filter:blur(12px)}
+.hdr-sub{font-size:10px;letter-spacing:3px;color:var(--muted);text-transform:uppercase;margin-bottom:6px}
+.hdr-row{display:flex;justify-content:space-between;align-items:center}
+.hdr-title{font-size:20px;font-weight:700;letter-spacing:-.5px}
+.hdr-right{display:flex;align-items:center;gap:8px}
+.save-dot{width:8px;height:8px;border-radius:50%;transition:background .3s}
+.period-badge{font-size:11px;background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:3px 8px;color:var(--muted)}
+/* Mode toggle */
+.mode-toggle{display:flex;background:var(--card2);border-radius:12px;padding:3px;gap:3px;margin-top:10px}
+.mode-btn{flex:1;padding:7px 0;border-radius:9px;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:700;font-size:13px;transition:all .2s;color:var(--muted);background:transparent}
+.mode-btn.on{color:#000}
+/* Summary bar */
+.summary-bar{display:flex;border-bottom:1px solid var(--border)}
+.sum-item{flex:1;padding:10px 0;text-align:center;border-right:1px solid var(--border)}
+.sum-item:last-child{border-right:none}
+.sum-val{font-size:15px;font-weight:700;font-family:'DM Mono',monospace;letter-spacing:-.5px}
+.sum-lbl{font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-top:2px}
+/* Tabs */
+.tabs{display:flex;gap:5px;padding:10px 20px}
+.tab{flex:1;padding:8px 0;border-radius:10px;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:600;font-size:10px;transition:all .2s}
+.tab.on{background:#fff;color:#000}
+.tab.off{background:var(--card);color:var(--muted)}
+/* Pills */
+.pills{display:flex;gap:8px;padding:4px 20px 14px;overflow-x:auto;scrollbar-width:none}
+.pills::-webkit-scrollbar{display:none}
+.pill{flex-shrink:0;padding:7px 14px;border-radius:20px;border:1px solid var(--border);background:var(--card);color:var(--muted);font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;font-family:'DM Sans',sans-serif}
+.pill-add{flex-shrink:0;width:36px;height:36px;border-radius:18px;border:1px dashed #3a3a3a;background:transparent;color:#3a3a3a;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+/* Cards */
+.card{margin:0 20px 14px;background:var(--card);border-radius:22px;padding:20px}
+.rollover{margin:0 20px 14px;border-radius:16px;padding:13px 16px;display:flex;align-items:center;gap:10px}
+.ptrack{background:var(--card2);border-radius:99px;height:8px;overflow:hidden}
+.pfill{height:100%;border-radius:99px;transition:width .5s cubic-bezier(.4,0,.2,1)}
+/* Form */
+.form-card{margin:0 20px 14px;background:var(--card);border-radius:22px;padding:18px}
+.slabel{font-size:10px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:10px}
+.inp{width:100%;background:var(--card2);border:1px solid var(--border);border-radius:14px;padding:12px 16px;color:#fff;font-size:20px;font-family:'DM Mono',monospace;font-weight:600;margin-bottom:10px;outline:none}
+.inp::placeholder{color:#333}
+.inp.sm{font-size:14px;font-family:'DM Sans',sans-serif;margin-bottom:10px}
+.cats{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:10px}
+.cat{padding:9px 6px;border-radius:12px;border:1px solid var(--border);background:var(--card2);color:var(--muted);font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:500}
+.btn{width:100%;padding:14px 0;border-radius:14px;border:none;color:#fff;font-family:'DM Sans',sans-serif;font-weight:700;font-size:15px;cursor:pointer}
+.btn:active{opacity:.8}
+.btn.outline{background:transparent;border:1px solid var(--border);color:var(--muted);padding:11px 0}
+/* Expense list — swipe */
+.exp-list{padding:0 20px}
+.lbl{font-size:10px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:10px}
+.empty{text-align:center;color:#2a2a2a;padding:40px 0;font-size:14px}
+.exp-wrap{position:relative;margin-bottom:8px;border-radius:16px;overflow:hidden}
+.exp-delete-bg{position:absolute;inset:0;background:var(--red);display:flex;align-items:center;justify-content:flex-end;padding-right:16px;border-radius:16px}
+.exp-item{display:flex;align-items:center;background:var(--card);border-radius:16px;padding:12px 14px;position:relative;transition:transform .15s ease;will-change:transform;touch-action:pan-y}
+/* Archive banner */
+.archive-banner{margin:0 20px 14px;border-radius:16px;padding:14px 16px;background:linear-gradient(135deg,#1a1000,#120e00);border:1px solid #4a3800;display:flex;align-items:center;gap:12px}
+/* Modal */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:100;display:flex;align-items:flex-end;backdrop-filter:blur(4px)}
+.sheet{background:#181818;border-radius:24px 24px 0 0;padding:24px 20px 40px;width:100%;max-width:430px;margin:0 auto}
+.handle{width:40px;height:4px;background:#333;border-radius:99px;margin:0 auto 20px}
+.modal-title{font-size:18px;font-weight:700;margin-bottom:18px}
+.colors{display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap}
+.swatch{width:30px;height:30px;border-radius:50%;cursor:pointer;border:3px solid transparent;transition:border .15px}
+.swatch.on{border-color:#fff}
+.row2{display:flex;gap:10px}
+/* Toast */
+.toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(140px);border-radius:22px;padding:18px 20px;max-width:340px;width:90%;z-index:999;text-align:center;transition:transform .45s cubic-bezier(.34,1.56,.64,1);box-shadow:0 20px 60px rgba(0,0,0,.7)}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.foot{text-align:center;font-size:11px;padding:20px 0 0}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="modal"></div>
+<div id="celeb" style="position:fixed;inset:0;z-index:200;display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px;backdrop-filter:blur(20px)">
+  <div id="celeb-bg" style="position:absolute;inset:0;opacity:.92"></div>
+  <div style="position:relative;z-index:1">
+    <div id="celeb-emoji" style="font-size:72px;margin-bottom:16px;animation:pop .4s cubic-bezier(.34,1.56,.64,1)"></div>
+    <div id="celeb-title" style="font-size:28px;font-weight:700;color:#fff;margin-bottom:10px;letter-spacing:-.5px"></div>
+    <div id="celeb-msg" style="font-size:15px;color:rgba(255,255,255,.8);line-height:1.6;margin-bottom:8px"></div>
+    <div id="celeb-amount" style="font-size:42px;font-weight:700;font-family:'DM Mono',monospace;letter-spacing:-2px;margin:16px 0"></div>
+    <div id="celeb-sub" style="font-size:13px;color:rgba(255,255,255,.6);margin-bottom:32px"></div>
+    <button onclick="closeceleb()" style="background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.3);border-radius:16px;padding:14px 40px;color:#fff;font-family:'DM Sans',sans-serif;font-weight:700;font-size:16px;cursor:pointer;backdrop-filter:blur(10px)">Merci ! 🙌</button>
+  </div>
+</div>
+<style>
+@keyframes pop{0%{transform:scale(0)}100%{transform:scale(1)}}
+</style>
+<div class="toast" id="toast">
+  <div id="te" style="font-size:34px;margin-bottom:8px"></div>
+  <div id="tt" style="font-size:16px;font-weight:700;margin-bottom:6px"></div>
+  <div id="tm" style="font-size:13px;line-height:1.5"></div>
+</div>
+<script>
+// ─── MODE CONFIG ───
+const CFG = {
+  eur: {
+    sym:"€", icon:"💰", name:"Budget",
+    budgetLbl:"Budget", spentLbl:"Dépensé", remLbl:"Restant",
+    savingsTab:"Économies 🇹🇷", savingsTitle:"Économies cumulées", savingsSub:"économisés",
+    addLbl:"Ajouter une dépense", entryLbl:"dépense", entriesLbl:"dépenses",
+    weekLbl:"semaine", weekUnit:"€",
+    rolloverLbl:"Report semaine précédente", rolloverSub:"Ajouté au budget de base",
+    overLbl:"Dépassement", deficitLbl:"Économisé",
+    cats:["🍽️ Repas","☕ Café","🛒 Courses","🎉 Sortie","🚗 Transport","🧾 Autre"],
+    accentA:"#f97316", accentB:"#3b82f6", accentC:"#a78bfa",
+    toastBg:"linear-gradient(135deg,#14291a,#1a3525)", toastBorder:"#2a5a38",
+    toastColor:"#22c55e", toastSub:"#4a9a5a",
+    savingsBg:"linear-gradient(135deg,#0e1520,#0a1218)", savingsBorder:"#1a3040", savingsColor:"#3b82f6",
+  },
+  kcal: {
+    sym:"kcal", icon:"🔥", name:"Calories",
+    budgetLbl:"Objectif", spentLbl:"Consommé", remLbl:"Solde",
+    savingsTab:"Déficit 🔥", savingsTitle:"Déficit cumulé", savingsSub:"kcal de déficit",
+    addLbl:"Ajouter un repas", entryLbl:"repas", entriesLbl:"repas",
+    weekLbl:"semaine", weekUnit:"kcal",
+    rolloverLbl:"Déficit semaine précédente", rolloverSub:"Bonus reporté sur cette semaine",
+    overLbl:"Surplus", deficitLbl:"Déficit",
+    cats:["🍳 Petit-déj","🍽️ Déjeuner","🌙 Dîner","🍫 Snack","🥤 Boisson","🏋️ Sport"],
+    accentA:"#ef4444", accentB:"#f59e0b", accentC:"#22c55e",
+    toastBg:"linear-gradient(135deg,#1a0f00,#251500)", toastBorder:"#5a3800",
+    toastColor:"#f59e0b", toastSub:"#7a5a20",
+    savingsBg:"linear-gradient(135deg,#150a00,#1a0e00)", savingsBorder:"#3a2000", savingsColor:"#f59e0b",
+  }
+};
+
+const PALETTE=["#f97316","#3b82f6","#a78bfa","#22c55e","#ec4899","#f59e0b","#14b8a6","#ef4444","#64748b","#8b5cf6"];
+const REWARDS_EUR=[{e:"🏆",t:"Champion de l'épargne !"},{e:"💪",t:"Maîtrise totale !"},{e:"🎯",t:"En plein dans le mille !"},{e:"🌟",t:"Superbe semaine précédente !"},{e:"🚀",t:"Décollage réussi !"}];
+const REWARDS_KCAL=[{e:"🔥",t:"Déficit atteint !"},{e:"💪",t:"Maîtrise calorique !"},{e:"🎯",t:"Objectif respecté !"},{e:"🥗",t:"Semaine exemplaire !"},{e:"⚡",t:"En pleine forme !"}];
+
+const INIT_EUR=[
+  {id:"s1", label:"S1 — 7 au 13 mai",    budget:157, color:"#f97316", dateRange:"7 – 13 mai"},
+  {id:"s2", label:"S2 — 14 au 20 mai",   budget:136, color:"#f97316", dateRange:"14 – 20 mai"},
+  {id:"s3", label:"S3 — 21 au 31 mai",   budget:130, color:"#f97316", dateRange:"21 – 31 mai"},
+  {id:"s4", label:"S4 — 1 au 7 juin",    budget:102, color:"#3b82f6", dateRange:"1 – 7 juin"},
+  {id:"s5", label:"S5 — 8 au 14 juin",   budget:102, color:"#3b82f6", dateRange:"8 – 14 juin"},
+  {id:"s6", label:"S6 — 15 au 21 juin",  budget:102, color:"#3b82f6", dateRange:"15 – 21 juin"},
+  {id:"s7", label:"S7 — 22 au 28 juin",  budget:102, color:"#3b82f6", dateRange:"22 – 28 juin"},
+  {id:"s8", label:"S8 — 1 au 7 juil",    budget:122, color:"#a78bfa", dateRange:"1 – 7 juillet"},
+  {id:"s9", label:"S9 — 8 au 14 juil",   budget:122, color:"#a78bfa", dateRange:"8 – 14 juillet"},
+  {id:"s10",label:"S10 — 15 au 21 juil", budget:122, color:"#a78bfa", dateRange:"15 – 21 juillet"},
+  {id:"s11",label:"S11 — 22 au 31 juil", budget:122, color:"#a78bfa", dateRange:"22 – 31 juillet"},
+];
+
+// ─── STATE ───
+let D = {
+  mode: "eur",
+  view: "week",
+  saveOk: true,
+  openPeriod: null,
+  modal: null, mLabel:"", mBudget:"", mColor:PALETTE[0], mEditId:null, mPeriodLabel:"", mGoalName:"", mGoalTarget:"", mGoalEmoji:"",
+  data: {
+    eur: { weeks:[], expenses:{}, shown:{}, history:[], selWeek:null, amount:"", label:"", cat:"🍽️ Repas", goal:{name:"Istanbul",emoji:"🇹🇷",target:800,injections:[]} },
+    kcal:{ weeks:[], expenses:{}, shown:{}, history:[], selWeek:null, amount:"", label:"", cat:"🍳 Petit-déj", goal:{name:"Objectif forme",emoji:"💪",target:0} },
+  }
+};
+
+let swipeState={};
+function cur(){return D.data[D.mode];}
+function cfg(){return CFG[D.mode];}
+
+// ─── STORAGE ───
+function persist(){
+  try{localStorage.setItem("app_v5",JSON.stringify({mode:D.mode,data:D.data}));D.saveOk=true;}
+  catch(e){D.saveOk=false;}
+}
+function hydrate(){
+  try{
+    const raw=localStorage.getItem("app_v5");
+    if(raw){
+      const p=JSON.parse(raw);
+      D.mode=p.mode||"eur";
+      if(p.data){
+        D.data.eur=p.data.eur||{weeks:[...INIT_EUR],expenses:{},shown:{},history:[],selWeek:null,amount:"",label:"",cat:"🍽️ Repas",goal:{name:"Istanbul",emoji:"🇹🇷",target:800,injections:[]}};
+        D.data.kcal=p.data.kcal||{weeks:[],expenses:{},shown:{},history:[],selWeek:null,amount:"",label:"",cat:"🍳 Petit-déj",goal:{name:"Objectif forme",emoji:"💪",target:0}};
+      }
+    }else{
+      D.data.eur.weeks=[...INIT_EUR];
+    }
+  }catch(e){D.data.eur.weeks=[...INIT_EUR];}
+  if(!cur().selWeek)cur().selWeek=cur().weeks[0]?.id||null;
+  if(!D.data.eur.goal)D.data.eur.goal={name:"Istanbul",emoji:"🇹🇷",target:800,injections:[]};
+  if(!D.data.eur.goal.injections)D.data.eur.goal.injections=[];
+  if(!D.data.kcal.goal)D.data.kcal.goal={name:"Objectif forme",emoji:"💪",target:0,injections:[]};
+  if(!D.data.kcal.goal.injections)D.data.kcal.goal.injections=[];
+  if(!D.data.kcal.goal)D.data.kcal.goal={name:"Objectif forme",emoji:"💪",target:0};
+}
+
+// ─── MATH ───
+function spent(wid){return(cur().expenses[wid]||[]).reduce((s,e)=>s+e.amount,0);}
+function effective(wid){
+  const idx=cur().weeks.findIndex(w=>w.id===wid);
+  if(idx<=0)return cur().weeks[0]?.budget||0;
+  const prev=cur().weeks[idx-1];
+  const prevRem=effective(prev.id)-spent(prev.id);
+  return Math.round((cur().weeks[idx].budget+Math.max(0,prevRem))*100)/100;
+}
+function rollover(wid){const w=cur().weeks.find(x=>x.id===wid);return w?Math.round((effective(wid)-w.budget)*100)/100:0;}
+function remaining(wid){return Math.round((effective(wid)-spent(wid))*100)/100;}
+function totalBase(){return Math.round(cur().weeks.reduce((s,w)=>s+w.budget,0)*100)/100;}
+function totalSpentAll(){return Math.round(cur().weeks.reduce((s,w)=>s+spent(w.id),0)*100)/100;}
+function totalRemainingAll(){return Math.round((totalBase()-totalSpentAll())*100)/100;}
+function totalSavings(){return totalRemainingAll();}
+
+// ─── ARCHIVE ───
+function archivePeriod(label){
+  cur().history.unshift({
+    id:"p_"+Date.now(), label:label||"Période archivée",
+    archivedAt:new Date().toLocaleDateString("fr-FR"),
+    weeks:cur().weeks.map(w=>({...w,effective:effective(w.id),spent:spent(w.id),remaining:remaining(w.id)})),
+    totalBudget:totalBase(), totalSpent:totalSpentAll(), totalSaved:totalSavings(),
+  });
+  cur().weeks=[]; cur().expenses={}; cur().shown={}; cur().selWeek=null;
+  D.view="history"; D.modal=null;
+  persist(); render();
+}
+
+// ─── TOAST ───
+function showToast(wid){
+  const roll=rollover(wid);
+  if(roll<=0||cur().shown[wid])return;
+  cur().shown[wid]=true; persist();
+  const idx=cur().weeks.findIndex(w=>w.id===wid);
+  const prev=idx>0?cur().weeks[idx-1].label:"";
+  const rewards=D.mode==="eur"?REWARDS_EUR:REWARDS_KCAL;
+  const rw=rewards[Math.floor(Math.random()*rewards.length)];
+  const c=cfg();
+  const msg=D.mode==="eur"
+    ?`Tu as économisé ${roll.toFixed(2)}€ (${prev}). Ajouté à cette semaine ! 💰`
+    :`${roll.toFixed(0)} kcal de déficit (${prev}). Reportées sur cette semaine ! 🔥`;
+  document.getElementById("te").textContent=rw.e;
+  document.getElementById("tt").textContent=rw.t;
+  document.getElementById("tt").style.color=c.toastColor;
+  document.getElementById("tm").textContent=msg;
+  document.getElementById("tm").style.color=c.toastSub;
+  const t=document.getElementById("toast");
+  t.style.background=c.toastBg; t.style.border=`1px solid ${c.toastBorder}`;
+  t.classList.add("show"); setTimeout(()=>t.classList.remove("show"),5000);
+}
+
+// ─── SWIPE ───
+function onTouchStart(e,id){const t=e.touches[0];swipeState[id]={startX:t.clientX,curX:t.clientX};}
+function onTouchMove(e,id){
+  if(!swipeState[id])return;
+  const t=e.touches[0]; const dx=t.clientX-swipeState[id].startX; swipeState[id].curX=t.clientX;
+  if(dx<0){const el=document.getElementById("ei_"+id);if(el){el.style.transform=`translateX(${Math.max(dx,-80)}px)`;el.style.transition="none";}}
+}
+function onTouchEnd(e,wid,id){
+  if(!swipeState[id])return;
+  const dx=swipeState[id].curX-swipeState[id].startX;
+  const el=document.getElementById("ei_"+id);
+  if(dx<-55){if(el){el.style.transform="translateX(-110%)";el.style.opacity="0";el.style.transition="all .25s ease";}setTimeout(()=>delExpDirect(wid,id),260);}
+  else{if(el){el.style.transform="translateX(0)";el.style.transition="transform .2s ease";}}
+  delete swipeState[id];
+}
+
+// ─── MODALS ───
+function openAddWeek(){D.modal="add";D.mLabel="";D.mBudget="";D.mEditId=null;D.mColor=PALETTE[cur().weeks.length%PALETTE.length];renderModal();}
+function openEditWeek(wid){const w=cur().weeks.find(x=>x.id===wid);D.modal="add";D.mLabel=w.label;D.mBudget=String(w.budget);D.mColor=w.color;D.mEditId=wid;renderModal();}
+function openArchive(){D.modal="archive";D.mPeriodLabel=D.mode==="eur"?"Période Mai — Juillet 2025":"Suivi kcal — Période 1";renderModal();}
+function openGoal(){const g=cur().goal;D.modal="goal";D.mGoalName=g.name;D.mGoalEmoji=g.emoji;D.mGoalTarget=g.target?String(g.target):"";renderModal();}
+function closeModal(){D.modal=null;document.getElementById("modal").innerHTML="";}
+
+function confirmWeek(){
+  const lbl=D.mLabel.trim(), bgt=parseFloat(D.mBudget.replace(",","."));
+  if(!lbl){alert("Donne un nom");return;}
+  if(!bgt||bgt<=0){alert("Saisis une valeur valide");return;}
+  if(D.mEditId){cur().weeks=cur().weeks.map(w=>w.id===D.mEditId?{...w,label:lbl,budget:bgt,color:D.mColor}:w);}
+  else{const nw={id:"c_"+Date.now(),label:lbl,budget:bgt,color:D.mColor,dateRange:""};cur().weeks.push(nw);cur().selWeek=nw.id;}
+  D.view="week"; closeModal(); persist(); render();
+}
+function confirmGoal(){
+  const name=D.mGoalName.trim()||"Mon objectif";
+  const emoji=D.mGoalEmoji.trim()||"🎯";
+  const target=parseFloat(D.mGoalTarget.replace(",","."))||0;
+  const injections=cur().goal?.injections||[];
+  cur().goal={name,emoji,target,injections};
+  closeModal(); persist(); render();
+}
+function openAddInjection(){D.modal="injection";D.mLabel="";D.mBudget="";renderModal();}
+function confirmInjection(){
+  const amt=parseFloat(D.mBudget.replace(",","."));
+  if(!amt||amt<=0){alert("Saisis un montant valide");return;}
+  const inj={id:Date.now(),amount:amt,label:D.mLabel||"Injection mensuelle",date:new Date().toLocaleDateString("fr-FR")};
+  if(!cur().goal.injections)cur().goal.injections=[];
+  cur().goal.injections.push(inj);
+  closeModal(); persist(); render();
+}
+function delInjection(id){
+  if(!confirm("Supprimer cette injection ?"))return;
+  cur().goal.injections=(cur().goal.injections||[]).filter(i=>i.id!==id);
+  persist(); render();
+}
+function confirmArchive(){archivePeriod(D.mPeriodLabel.trim()||"Période archivée");}
+function overlayClick(e){if(e.target.classList.contains("overlay"))closeModal();}
+
+const GOAL_EMOJIS=["🇹🇷","🇲🇦","🇯🇵","🇮🇹","🇪🇸","🏖️","✈️","🏠","🚗","💍","📱","🎯","💪","🔥","⚡"];
+
+function renderModal(){
+  const c=cfg();
+  if(D.modal==="add"){
+    document.getElementById("modal").innerHTML=`
+    <div class="overlay" onclick="overlayClick(event)">
+      <div class="sheet" onclick="event.stopPropagation()">
+        <div class="handle"></div>
+        <div class="modal-title">${D.mEditId?"✏️ Modifier":"➕ Nouvelle "+c.weekLbl}</div>
+        <div class="slabel">Nom</div>
+        <input class="inp sm" type="text" placeholder="ex: Semaine du 1 au 7 août" value="${D.mLabel}" oninput="D.mLabel=this.value"/>
+        <div class="slabel">${c.budgetLbl} (${c.sym})</div>
+        <input class="inp" type="number" inputmode="decimal" placeholder="0" value="${D.mBudget}" oninput="D.mBudget=this.value"/>
+        <div class="slabel">Couleur</div>
+        <div class="colors">${PALETTE.map(p=>`<div class="swatch ${D.mColor===p?'on':''}" style="background:${p}" onclick="D.mColor='${p}';renderModal()"></div>`).join('')}</div>
+        <div class="row2">
+          <button class="btn outline" style="flex:1" onclick="closeModal()">Annuler</button>
+          <button class="btn" style="flex:2;background:${D.mColor}" onclick="confirmWeek()">${D.mEditId?"Enregistrer":"Ajouter"}</button>
+        </div>
+      </div>
+    </div>`;
+  }else if(D.modal==="goal"){
+    const isKcal=D.mode==="kcal";
+    document.getElementById("modal").innerHTML=`
+    <div class="overlay" onclick="overlayClick(event)">
+      <div class="sheet" onclick="event.stopPropagation()">
+        <div class="handle"></div>
+        <div class="modal-title">🎯 Mon objectif</div>
+        <div class="slabel">Nom de l'objectif</div>
+        <input class="inp sm" type="text" placeholder="${isKcal?'ex: Objectif -5kg':'ex: Istanbul, Vacances...'}" value="${D.mGoalName}" oninput="D.mGoalName=this.value"/>
+        <div class="slabel">Emoji / Icône</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+          ${GOAL_EMOJIS.map(e=>`<button onclick="D.mGoalEmoji='${e}';renderModal()" style="font-size:22px;background:${D.mGoalEmoji===e?'var(--card2)':'transparent'};border:${D.mGoalEmoji===e?'1px solid #444':'1px solid transparent'};border-radius:10px;padding:6px 8px;cursor:pointer">${e}</button>`).join('')}
+          <input type="text" placeholder="✏️" value="${D.mGoalEmoji}" oninput="D.mGoalEmoji=this.value;renderModal()" style="width:52px;background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:6px 8px;color:#fff;font-size:18px;text-align:center;outline:none"/>
+        </div>
+        <div class="slabel">Montant cible (${c.sym}) — optionnel</div>
+        <input class="inp" type="number" inputmode="decimal" placeholder="${isKcal?'ex: 35000 kcal de déficit':'ex: 800 pour Istanbul'}" value="${D.mGoalTarget}" oninput="D.mGoalTarget=this.value"/>
+        <div class="row2">
+          <button class="btn outline" style="flex:1" onclick="closeModal()">Annuler</button>
+          <button class="btn" style="flex:2;background:${isKcal?'#f59e0b':'#22c55e'}" onclick="confirmGoal()">Enregistrer</button>
+        </div>
+      </div>
+    </div>`;
+  }else if(D.modal==="injection"){
+    const cfg2=cfg(),isKcal=D.mode==="kcal";
+    document.getElementById("modal").innerHTML=`
+    <div class="overlay" onclick="overlayClick(event)">
+      <div class="sheet" onclick="event.stopPropagation()">
+        <div class="handle"></div>
+        <div class="modal-title">💉 Nouvelle injection</div>
+        <p style="font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.6">
+          Un montant que tu déposes directement vers ton objectif, en dehors du budget quotidien.
+        </p>
+        <div class="slabel">Montant (${cfg2.sym})</div>
+        <input class="inp" type="number" inputmode="decimal" placeholder="${isKcal?'0 kcal':'0.00'}" value="${D.mBudget}" oninput="D.mBudget=this.value"/>
+        <div class="slabel">Libellé (optionnel)</div>
+        <input class="inp sm" type="text" placeholder="ex: Injection mai, Prime, Virement..." value="${D.mLabel}" oninput="D.mLabel=this.value"/>
+        <div class="row2">
+          <button class="btn outline" style="flex:1" onclick="closeModal()">Annuler</button>
+          <button class="btn" style="flex:2;background:#3b82f6" onclick="confirmInjection()">Ajouter</button>
+        </div>
+      </div>
+    </div>`;
+  }else if(D.modal==="archive"){
+    document.getElementById("modal").innerHTML=`
+    <div class="overlay" onclick="overlayClick(event)">
+      <div class="sheet" onclick="event.stopPropagation()">
+        <div class="handle"></div>
+        <div class="modal-title">📦 Archiver la période</div>
+        <p style="font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.6">
+          Les <strong style="color:var(--text)">${cur().weeks.length} semaines</strong> actives seront archivées dans <strong style="color:var(--text)">Historique</strong>.
+        </p>
+        <div class="slabel">Nom de la période</div>
+        <input class="inp sm" type="text" value="${D.mPeriodLabel}" oninput="D.mPeriodLabel=this.value"/>
+        <div style="background:#1a0e0e;border:1px solid #4a1818;border-radius:14px;padding:12px 14px;margin-bottom:16px">
+          <div style="font-size:12px;color:#f59e0b;font-weight:600;margin-bottom:4px">⚠️ Action irréversible</div>
+          <div style="font-size:12px;color:#7a4a4a">Les données seront conservées dans l'historique mais effacées de la vue principale.</div>
+        </div>
+        <div class="row2">
+          <button class="btn outline" style="flex:1" onclick="closeModal()">Annuler</button>
+          <button class="btn" style="flex:2;background:#f59e0b;color:#000" onclick="confirmArchive()">Archiver</button>
+        </div>
+      </div>
+    </div>`;
+  }
+}
+
+// ─── ACTIONS ───
+function setMode(m){
+  D.mode=m; D.view="week"; D.openPeriod=null;
+  if(!cur().selWeek)cur().selWeek=cur().weeks[0]?.id||null;
+  persist(); render();
+}
+function setView(v){D.view=v;render();}
+function selWeek(id){cur().selWeek=id;render();}
+
+function addExp(){
+  const amt=parseFloat(cur().amount.replace(",","."));
+  if(!amt||amt<=0){alert("Saisis une valeur valide");return;}
+  const wid=cur().selWeek;
+  const isFirst=(cur().expenses[wid]||[]).length===0;
+  const e={id:Date.now(),amount:amt,label:cur().label||cur().cat,cat:cur().cat,date:new Date().toLocaleDateString("fr-FR")};
+  if(!cur().expenses[wid])cur().expenses[wid]=[];
+  cur().expenses[wid].push(e);
+  cur().amount=""; cur().label="";
+  persist(); if(isFirst)showToast(wid); render();
+}
+function delExpDirect(wid,id){
+  cur().expenses[wid]=(cur().expenses[wid]||[]).filter(e=>e.id!==id);
+  persist(); render();
+}
+function delWeek(wid){
+  const w=cur().weeks.find(x=>x.id===wid);
+  const hasExp=(cur().expenses[wid]||[]).length>0;
+  if(!confirm(hasExp?`Supprimer "${w.label}" et ses ${cur().expenses[wid].length} ${cfg().entriesLbl} ?`:`Supprimer "${w.label}" ?`))return;
+  cur().weeks=cur().weeks.filter(x=>x.id!==wid); delete cur().expenses[wid];
+  cur().selWeek=cur().weeks[cur().weeks.length-1]?.id||null;
+  persist(); render();
+}
+function togglePeriod(id){D.openPeriod=D.openPeriod===id?null:id;render();}
+
+function closeWeek(wid){
+  const w=cur().weeks.find(x=>x.id===wid);
+  if(!w||w.closed)return;
+  const rem=remaining(wid);
+  const isKcal=D.mode==="kcal";
+  const goal=cur().goal||{};
+  const injTotal=Math.round((goal.injections||[]).reduce((s,i)=>s+i.amount,0)*100)/100;
+  const totalVersObjectif=Math.round((totalSavings()+injTotal)*100)/100;
+  const goalReached=goal.target>0&&totalVersObjectif>=goal.target;
+
+  // Mark week as closed
+  cur().weeks=cur().weeks.map(x=>x.id===wid?{...x,closed:true}:x);
+  persist();
+
+  if(goalReached){
+    showCeleb({
+      bg:"linear-gradient(135deg,#1a0a00,#2a1500,#1a0a00)",
+      emoji:"🎯",
+      title:"Objectif concrétisé !",
+      msg:`T'as tout déchiré ${goal.emoji} ${goal.name} c'est dans la poche !`,
+      amount:`+${isKcal?totalVersObjectif.toFixed(0):totalVersObjectif.toFixed(2)} ${cfg().sym}`,
+      sub:"T'es le meilleur, vraiment. 🔥",
+      color:"#f59e0b"
+    });
+  } else if(rem>0){
+    const msgs=[
+      "Bravo champion, t'as géré cette semaine ! 💪",
+      "Semaine bouclée sous budget, continue comme ça ! 🚀",
+      "T'es en feu ! Chaque euro économisé rapproche de l'objectif. 🏆",
+      "Discipline de compétition ! Belle semaine. 🎯",
+    ];
+    showCeleb({
+      bg:"linear-gradient(135deg,#0a1a0a,#0e250e,#0a1a0a)",
+      emoji:"🏆",
+      title:"Bravo champion !",
+      msg:msgs[Math.floor(Math.random()*msgs.length)],
+      amount:`+${isKcal?rem.toFixed(0):rem.toFixed(2)} ${cfg().sym}`,
+      sub:`économisé${isKcal?' de déficit':''} cette semaine → reporté sur la suivante`,
+      color:"#22c55e"
+    });
+  } else {
+    showCeleb({
+      bg:"linear-gradient(135deg,#0a0a1a,#0e0e25,#0a0a1a)",
+      emoji:"💪",
+      title:"Semaine clôturée !",
+      msg:"La semaine est bouclée. La prochaine sera la bonne ! 🎯",
+      amount:"",
+      sub:"Chaque semaine est une nouvelle chance.",
+      color:"#3b82f6"
+    });
+  }
+  render();
+}
+
+function showCeleb({bg,emoji,title,msg,amount,sub,color}){
+  const el=document.getElementById("celeb");
+  document.getElementById("celeb-bg").style.background=bg;
+  document.getElementById("celeb-emoji").textContent=emoji;
+  document.getElementById("celeb-title").textContent=title;
+  document.getElementById("celeb-title").style.color=color;
+  document.getElementById("celeb-msg").textContent=msg;
+  document.getElementById("celeb-amount").textContent=amount;
+  document.getElementById("celeb-amount").style.color=color;
+  document.getElementById("celeb-sub").textContent=sub;
+  el.style.display="flex";
+  // restart emoji animation
+  const emo=document.getElementById("celeb-emoji");
+  emo.style.animation="none"; emo.offsetHeight; emo.style.animation="pop .4s cubic-bezier(.34,1.56,.64,1)";
+}
+function closeceleb(){document.getElementById("celeb").style.display="none";}
+
+function reopenWeek(wid){
+  cur().weeks=cur().weeks.map(x=>x.id===wid?{...x,closed:false}:x);
+  persist(); render();
+}
+
+// ─── RENDER ───
+function render(){
+  const c=cfg();
+  const w=cur().weeks.find(x=>x.id===cur().selWeek);
+  const roll=w?rollover(cur().selWeek):0;
+  const eff=w?effective(cur().selWeek):0;
+  const sp=w?spent(cur().selWeek):0;
+  const rem=w?remaining(cur().selWeek):0;
+  const pct=w?Math.min((sp/eff)*100,100):0;
+  const barC=pct>85?"#ef4444":pct>60?"#f59e0b":"#22c55e";
+  const exps=w?(cur().expenses[cur().selWeek]||[]):[];
+  const totRem=totalRemainingAll();
+  const totSp=totalSpentAll();
+  const totBgt=totalBase();
+  const periodNum=cur().history.length+1;
+  const isKcal=D.mode==="kcal";
+
+  document.getElementById("app").innerHTML=`
+  <div class="hdr">
+    <div class="hdr-sub">${c.name}</div>
+    <div class="hdr-row">
+      <div class="hdr-title">${c.icon} Suivi ${isKcal?"calories":"dépenses"}</div>
+      <div class="hdr-right">
+        <span class="period-badge">Période ${periodNum}</span>
+        <div class="save-dot" style="background:${D.saveOk?'#22c55e':'#ef4444'}"></div>
+      </div>
+    </div>
+    <div class="mode-toggle">
+      <button class="mode-btn ${D.mode==='eur'?'on':''}" style="${D.mode==='eur'?'background:#fff':''}" onclick="setMode('eur')">💰 Budget €</button>
+      <button class="mode-btn ${D.mode==='kcal'?'on':''}" style="${D.mode==='kcal'?'background:#f59e0b':''}" onclick="setMode('kcal')">🔥 Calories</button>
+    </div>
+  </div>
+
+  ${cur().weeks.length>0?`
+  <div class="summary-bar">
+    <div class="sum-item">
+      <div class="sum-val" style="color:${totRem>=0?'#22c55e':'#ef4444'}">${totRem>=0?'+':''}${totRem.toFixed(0)}${isKcal?'':''} <span style="font-size:10px">${c.sym}</span></div>
+      <div class="sum-lbl">${totRem>=0?c.remLbl:c.overLbl}</div>
+    </div>
+    <div class="sum-item">
+      <div class="sum-val" style="color:#ef4444">${totSp.toFixed(0)} <span style="font-size:10px">${c.sym}</span></div>
+      <div class="sum-lbl">${c.spentLbl}</div>
+    </div>
+    <div class="sum-item">
+      <div class="sum-val" style="color:var(--muted)">${totBgt.toFixed(0)} <span style="font-size:10px">${c.sym}</span></div>
+      <div class="sum-lbl">${c.budgetLbl} total</div>
+    </div>
+  </div>`:''}
+
+  <div class="tabs">
+    <button class="tab ${D.view==='week'?'on':'off'}" onclick="setView('week')">Semaine</button>
+    <button class="tab ${D.view==='savings'?'on':'off'}" onclick="setView('savings')">${D.mode==='kcal'?c.savingsTab:'Économies '+(cur().goal?.emoji||'🎯')}</button>
+    <button class="tab ${D.view==='global'?'on':'off'}" onclick="setView('global')">Global</button>
+    <button class="tab ${D.view==='history'?'on':'off'}" onclick="setView('history')">Historique${cur().history.length>0?' ('+cur().history.length+')':''}</button>
+  </div>
+
+  ${D.view==='week'?renderWeek(w,roll,eff,sp,rem,pct,barC,exps,c,isKcal)
+  :D.view==='savings'?renderSavings(c,isKcal)
+  :D.view==='global'?renderGlobal(c,isKcal)
+  :renderHistory(c,isKcal)}
+
+  <div class="foot" style="color:${D.saveOk?'#2a5a2a':'#ef4444'}">
+    ${D.saveOk?'✓ Données sauvegardées localement':'⚠️ Erreur de sauvegarde'}
+  </div>`;
+}
+
+function renderWeek(w,roll,eff,sp,rem,pct,barC,exps,c,isKcal){
+  if(!w&&cur().weeks.length===0)return`
+    <div style="padding:40px 20px;text-align:center">
+      <div style="font-size:48px;margin-bottom:16px">${c.icon}</div>
+      <div style="font-size:17px;font-weight:700;margin-bottom:8px">Nouvelle période ${c.name}</div>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:24px;line-height:1.6">
+        ${isKcal?"Crée ta première semaine avec ton objectif calorique.":"La période précédente est archivée. Ajoute ta première semaine."}
+      </div>
+      <button class="btn" style="background:${isKcal?'#f59e0b':'#3b82f6'};max-width:260px;margin:0 auto" onclick="openAddWeek()">+ Première semaine</button>
+    </div>`;
+
+  const wc=w?w.color:"#888";
+  return`
+    <div class="pills">
+      ${cur().weeks.map(x=>{
+        const s=spent(x.id),e2=effective(x.id),act=cur().selWeek===x.id;
+        const indicator=x.closed?'✅':s>e2?'🔴':s>0?'🟡':'';
+        return`<button class="pill" onclick="selWeek('${x.id}')"
+          style="${act?`border-color:${x.color};background:${x.color}22;color:${x.color}`:''}">
+          ${x.label.split('—')[0].trim()} ${indicator}
+        </button>`;
+      }).join('')}
+      <button class="pill-add" onclick="openAddWeek()">+</button>
+    </div>
+
+    ${roll>0?`
+    <div class="rollover" style="background:${isKcal?'linear-gradient(135deg,#1a1000,#120a00)':'linear-gradient(135deg,#14291a,#0e1f12)'};border:1px solid ${isKcal?'#4a2800':'#1e4a28'}">
+      <span style="font-size:22px">${isKcal?'⚡':'🔁'}</span>
+      <div style="flex:1">
+        <div style="font-size:12px;font-weight:700;color:${isKcal?'#f59e0b':'#22c55e'}">${c.rolloverLbl}</div>
+        <div style="font-size:11px;color:${isKcal?'#7a5a20':'#4a7a54'};margin-top:2px">${c.rolloverSub}</div>
+      </div>
+      <span style="font-family:'DM Mono',monospace;font-size:16px;font-weight:700;color:${isKcal?'#f59e0b':'#22c55e'}">+${roll.toFixed(isKcal?0:2)}${c.sym}</span>
+    </div>`:''}
+
+    <div class="card" style="border:1px solid ${wc}33">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div>
+          <div style="font-size:12px;font-weight:600;color:${wc}">${w.label} ${w.closed?'✅':''}</div>
+          ${w.dateRange?`<div style="font-size:10px;color:var(--muted);margin-top:2px">📅 ${w.dateRange}</div>`:''}
+          ${w.closed?`<div style="font-size:10px;color:#22c55e;margin-top:2px">Semaine clôturée</div>`:''}
+        </div>
+        <div style="display:flex;gap:8px">
+          ${!w.closed?`<button onclick="openEditWeek('${w.id}')" style="background:var(--card2);border:none;border-radius:8px;padding:6px 10px;color:var(--muted);cursor:pointer;font-size:13px">✏️</button>`:''}
+          <button onclick="delWeek('${w.id}')" style="background:var(--card2);border:none;border-radius:8px;padding:6px 10px;color:#3a3a3a;cursor:pointer;font-size:13px">🗑</button>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:16px">
+        <div>
+          <div style="font-size:38px;font-weight:700;font-family:'DM Mono',monospace;letter-spacing:-2px;color:${rem<0?'#ef4444':'#f0f0f0'}">${rem.toFixed(isKcal?0:0)}<span style="font-size:16px;font-weight:400;color:var(--muted)"> ${c.sym}</span></div>
+          <div style="font-size:12px;color:var(--muted);margin-top:4px">${rem>=0?c.remLbl:c.overLbl}</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:11px;color:var(--muted)">${c.spentLbl}</div>
+          <div style="font-size:20px;font-weight:600;font-family:'DM Mono',monospace;color:${wc}">${sp.toFixed(isKcal?0:2)}<span style="font-size:12px"> ${c.sym}</span></div>
+        </div>
+      </div>
+      <div class="ptrack"><div class="pfill" style="width:${pct}%;background:${barC}"></div></div>
+      <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:11px;color:var(--muted)">
+        <span>0</span><span>${eff.toFixed(isKcal?0:0)} ${c.sym} ${c.budgetLbl.toLowerCase()}</span>
+      </div>
+      ${!w.closed?`
+      <button onclick="closeWeek('${w.id}')" style="width:100%;margin-top:16px;padding:12px 0;border-radius:12px;border:1px solid ${rem>0?'#22c55e':'#3a3a3a'};background:${rem>0?'#22c55e18':'transparent'};color:${rem>0?'#22c55e':'#555'};font-family:'DM Sans',sans-serif;font-weight:700;font-size:14px;cursor:pointer">
+        ${rem>0?'✅ Clôturer la semaine (+'+rem.toFixed(isKcal?0:2)+' '+c.sym+' économisés)':'🔒 Clôturer la semaine'}
+      </button>`:`
+      <div style="display:flex;gap:8px;margin-top:16px">
+        <div style="flex:1;padding:12px 0;border-radius:12px;border:1px solid #22c55e;background:#22c55e18;color:#22c55e;font-family:'DM Sans',sans-serif;font-weight:700;font-size:14px;text-align:center">
+          ✅ Semaine clôturée
+        </div>
+        <button onclick="reopenWeek('${w.id}')" style="padding:12px 14px;border-radius:12px;border:1px solid #3a3a3a;background:transparent;color:#555;font-family:'DM Sans',sans-serif;font-weight:600;font-size:13px;cursor:pointer">
+          🔓 Réouvrir
+        </button>
+      </div>`}
+    </div>
+
+    ${roll>0?`
+    <div style="margin:0 20px 14px;background:var(--card);border-radius:16px;padding:14px 16px">
+      <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:7px">
+        <span style="color:var(--muted)">${c.budgetLbl} de base</span>
+        <span style="font-family:'DM Mono',monospace;font-weight:600;color:var(--muted)">${w.budget} ${c.sym}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:7px">
+        <span style="color:var(--muted)">${isKcal?'Déficit reporté':'Report semaine préc.'}</span>
+        <span style="font-family:'DM Mono',monospace;font-weight:600;color:${isKcal?'#f59e0b':'#22c55e'}">+${roll.toFixed(isKcal?0:2)} ${c.sym}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:12px;padding-top:8px;border-top:1px solid var(--border)">
+        <span style="font-weight:700">${c.budgetLbl} effectif</span>
+        <span style="font-family:'DM Mono',monospace;font-weight:700;color:${wc}">${eff.toFixed(isKcal?0:2)} ${c.sym}</span>
+      </div>
+    </div>`:''}
+
+    ${!w.closed?`<div class="form-card">
+      <div class="slabel">${c.addLbl}</div>
+      <input class="inp" type="number" inputmode="decimal" placeholder="${isKcal?'0 kcal':'0.00 €'}" value="${cur().amount}" oninput="cur().amount=this.value"/>
+      <div class="cats">${c.cats.map(cat=>`<button class="cat" onclick="cur().cat='${cat}';render()"
+        style="${cur().cat===cat?`background:${wc}33;border-color:${wc};color:${wc}`:''}">
+        ${cat}</button>`).join('')}</div>
+      <input class="inp sm" type="text" placeholder="Description (optionnel)" value="${cur().label}" oninput="cur().label=this.value"/>
+      <button class="btn" style="background:${wc}" onclick="addExp()">+ ${isKcal?'Ajouter un repas':'Ajouter la dépense'}</button>
+    </div>`:''}
+
+    <div class="exp-list">
+      <div class="lbl">${isKcal?'Repas':'Dépenses'} (${exps.length}) · ← Glisse pour supprimer</div>
+      ${exps.length===0?`<div class="empty">Aucun${isKcal?' repas':''} enregistré${isKcal?'':' cette semaine'} 🎉</div>`
+        :[...exps].reverse().map(e=>`
+        <div class="exp-wrap" id="ew_${e.id}">
+          <div class="exp-delete-bg"><span style="color:#fff;font-size:13px;font-weight:700">Supprimer</span></div>
+          <div class="exp-item" id="ei_${e.id}"
+            ontouchstart="onTouchStart(event,${e.id})"
+            ontouchmove="onTouchMove(event,${e.id})"
+            ontouchend="onTouchEnd(event,'${cur().selWeek}',${e.id})">
+            <span style="font-size:20px;margin-right:12px">${e.cat.split(' ')[0]}</span>
+            <div style="flex:1">
+              <div style="font-size:14px;font-weight:500">${e.label}</div>
+              <div style="font-size:11px;color:var(--muted);margin-top:2px">${e.date}</div>
+            </div>
+            <span style="font-family:'DM Mono',monospace;font-weight:600;font-size:14px;color:${wc};margin-right:4px">${isKcal?e.amount.toFixed(0):'-'+e.amount.toFixed(2)}</span>
+            <span style="font-size:10px;color:var(--muted)">${c.sym}</span>
+          </div>
+        </div>`).join('')}
+    </div>
+
+    ${cur().weeks.length>=11?`
+    <div class="archive-banner" style="margin-top:16px">
+      <span style="font-size:24px">📦</span>
+      <div style="flex:1">
+        <div style="font-size:12px;font-weight:700;color:#f59e0b">11 semaines atteintes</div>
+        <div style="font-size:11px;color:#7a6030;margin-top:2px">Archive cette période pour en démarrer une nouvelle</div>
+      </div>
+      <button onclick="openArchive()" style="background:#f59e0b;border:none;border-radius:10px;padding:8px 12px;color:#000;font-weight:700;font-size:12px;cursor:pointer">Archiver</button>
+    </div>`:''}
+  `;
+}
+
+function renderSavings(c,isKcal){
+  const sav=totalSavings();
+  const goal=cur().goal||{name:"Objectif",emoji:"🎯",target:0,injections:[]};
+  const injections=goal.injections||[];
+  const totalInj=Math.round(injections.reduce((s,i)=>s+i.amount,0)*100)/100;
+  const totalVersObjectif=Math.round((sav+totalInj)*100)/100;
+  const hasTarget=goal.target>0;
+  const pctGoal=hasTarget?Math.min((totalVersObjectif/goal.target)*100,100):0;
+  const goalBarC=pctGoal>=100?"#22c55e":pctGoal>60?"#f59e0b":"#3b82f6";
+  return`
+    <div style="padding:0 20px">
+
+      <!-- Goal card -->
+      <div style="background:${c.savingsBg};border-radius:22px;padding:20px;border:1px solid ${c.savingsBorder};margin-bottom:14px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">
+          <div style="font-size:10px;color:${c.savingsColor};letter-spacing:2px;text-transform:uppercase">${goal.emoji} Mon objectif</div>
+          <button onclick="openGoal()" style="background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:4px 10px;color:var(--muted);font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif">✏️ Modifier</button>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+          <span style="font-size:26px">${goal.emoji}</span>
+          <span style="font-size:16px;font-weight:700">${goal.name}</span>
+        </div>
+
+        <!-- Total vers objectif -->
+        <div style="font-size:38px;font-weight:700;font-family:'DM Mono',monospace;color:#22c55e;letter-spacing:-2px;margin-bottom:4px">
+          +${isKcal?totalVersObjectif.toFixed(0):totalVersObjectif.toFixed(2)}<span style="font-size:16px;font-weight:400"> ${c.sym}</span>
+        </div>
+        <div style="font-size:11px;color:#3a6a4a;margin-bottom:14px">total vers l'objectif</div>
+
+        <!-- Breakdown -->
+        <div style="background:rgba(0,0,0,.3);border-radius:12px;padding:10px 14px;margin-bottom:${hasTarget?14:0}px">
+          <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px">
+            <span style="color:#555">💸 Économies budget</span>
+            <span style="font-family:'DM Mono',monospace;font-weight:600;color:#22c55e">+${isKcal?sav.toFixed(0):sav.toFixed(2)} ${c.sym}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:12px">
+            <span style="color:#555">💉 Injections mensuelles</span>
+            <span style="font-family:'DM Mono',monospace;font-weight:600;color:#3b82f6">+${isKcal?totalInj.toFixed(0):totalInj.toFixed(2)} ${c.sym}</span>
+          </div>
+        </div>
+
+        <!-- Progress -->
+        ${hasTarget?`
+        <div style="background:#0a0a0a;border-radius:99px;height:7px;overflow:hidden;margin-bottom:6px">
+          <div style="width:${pctGoal}%;height:100%;background:${goalBarC};border-radius:99px;transition:width .5s ease"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:#3a6a4a">
+          <span>${pctGoal>=100?'✅ Objectif atteint !':pctGoal.toFixed(0)+'% atteint'}</span>
+          <span>Cible : ${goal.target.toFixed(0)} ${c.sym}</span>
+        </div>`:''}
+      </div>
+
+      <!-- Injections section -->
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div class="lbl" style="margin-bottom:0">💉 Injections (${injections.length})</div>
+        <button onclick="openAddInjection()" style="background:var(--card);border:1px solid #1a3a5a;border-radius:10px;padding:6px 12px;color:#3b82f6;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:600">+ Ajouter</button>
+      </div>
+      ${injections.length===0
+        ?`<div style="background:var(--card);border-radius:16px;padding:16px;margin-bottom:14px;text-align:center;color:#2a2a2a;font-size:13px">Aucune injection ce mois-ci</div>`
+        :[...injections].reverse().map(inj=>`
+        <div style="display:flex;align-items:center;background:var(--card);border-radius:16px;padding:12px 14px;margin-bottom:8px">
+          <span style="font-size:20px;margin-right:12px">💉</span>
+          <div style="flex:1">
+            <div style="font-size:14px;font-weight:500">${inj.label}</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:2px">${inj.date}</div>
+          </div>
+          <span style="font-family:'DM Mono',monospace;font-weight:600;font-size:15px;color:#3b82f6;margin-right:10px">+${isKcal?inj.amount.toFixed(0):inj.amount.toFixed(2)} ${c.sym}</span>
+          <button onclick="delInjection(${inj.id})" style="background:var(--card2);border:none;border-radius:8px;padding:6px 10px;color:var(--red);cursor:pointer;font-size:14px">✕</button>
+        </div>`).join('')}
+
+      <!-- Économies budget detail -->
+      <div class="lbl" style="margin-top:6px">💸 Détail économies budget</div>
+      ${cur().weeks.length===0?`<div class="empty">Aucune semaine active</div>`:
+        cur().weeks.map(x=>{
+          const e2=effective(x.id),s2=spent(x.id),r2=remaining(x.id);
+          const has=(cur().expenses[x.id]||[]).length>0;
+          return`<div style="background:var(--card);border-radius:18px;padding:14px 16px;margin-bottom:10px;cursor:pointer" onclick="selWeek('${x.id}');setView('week')">
+            <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+              <span style="font-size:13px;font-weight:600;color:${x.color}">${x.label}</span>
+              <span style="font-size:13px;font-family:'DM Mono',monospace;color:${r2<0?'#ef4444':r2>0&&has?'#22c55e':'#555'}">
+                ${has?(r2>0?'+':'')+(isKcal?r2.toFixed(0):r2.toFixed(2))+' '+c.sym:'—'}
+              </span>
+            </div>
+            ${x.dateRange?`<div style="font-size:10px;color:#3a3a3a">📅 ${x.dateRange}</div>`:''}
+            ${has?`<div style="font-size:11px;color:#555;margin-top:4px">${c.budgetLbl} ${e2.toFixed(0)} ${c.sym} · ${c.spentLbl} ${isKcal?s2.toFixed(0):s2.toFixed(2)} ${c.sym}</div>`:''}
+          </div>`;
+        }).join('')}
+    </div>`;
+}
+
+function renderGlobal(c,isKcal){
+  return`
+    <div style="padding:0 20px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div class="lbl" style="margin-bottom:0">Semaines actives (${cur().weeks.length}/11)</div>
+        <div style="display:flex;gap:8px">
+          <button onclick="openAddWeek()" style="background:var(--card);border:1px dashed #3a3a3a;border-radius:10px;padding:6px 12px;color:#3a3a3a;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif">+ Semaine</button>
+          ${cur().weeks.length>0?`<button onclick="openArchive()" style="background:var(--card);border:1px solid #4a3800;border-radius:10px;padding:6px 12px;color:#f59e0b;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif">📦 Archiver</button>`:''}
+        </div>
+      </div>
+      ${cur().weeks.length===0?`<div class="empty">Aucune semaine active. Crée une nouvelle période !</div>`:
+        cur().weeks.map(x=>{
+          const s2=spent(x.id),e2=effective(x.id),r2=rollover(x.id),rem2=remaining(x.id);
+          const p=Math.min((s2/e2)*100,100),bc=p>85?"#ef4444":p>60?"#f59e0b":"#22c55e";
+          return`<div style="background:var(--card);border-radius:18px;padding:14px 16px;margin-bottom:10px;cursor:pointer" onclick="selWeek('${x.id}');setView('week')">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px">
+              <div>
+                <div style="font-size:13px;font-weight:600;color:${x.color}">${x.label}</div>
+                ${x.dateRange?`<div style="font-size:10px;color:#3a3a3a;margin-top:2px">📅 ${x.dateRange}</div>`:''}
+              </div>
+              <div style="text-align:right">
+                <div style="font-size:13px;font-family:'DM Mono',monospace;color:${rem2<0?'#ef4444':'#f0f0f0'}">${isKcal?rem2.toFixed(0):rem2.toFixed(0)} <span style="font-size:10px;color:var(--muted)">${c.sym}</span></div>
+                <div style="font-size:10px;color:var(--muted);margin-top:1px">${rem2>=0?c.remLbl:c.overLbl}</div>
+              </div>
+            </div>
+            ${r2>0?`<div style="font-size:11px;color:${isKcal?'#f59e0b':'#22c55e'};margin-bottom:8px">+${isKcal?r2.toFixed(0):r2.toFixed(2)} ${c.sym} reportés ↑</div>`:''}
+            <div class="ptrack" style="height:5px;margin-top:6px"><div class="pfill" style="width:${p}%;background:${bc}"></div></div>
+            <div style="display:flex;justify-content:space-between;margin-top:5px;font-size:10px;color:#555">
+              <span>${isKcal?s2.toFixed(0):s2.toFixed(2)} ${c.sym} ${c.spentLbl.toLowerCase()}</span>
+              <span>sur ${isKcal?e2.toFixed(0):e2.toFixed(0)} ${c.sym}</span>
+            </div>
+          </div>`;
+        }).join('')}
+    </div>`;
+}
+
+function renderHistory(c,isKcal){
+  if(cur().history.length===0)return`
+    <div style="padding:60px 20px;text-align:center">
+      <div style="font-size:48px;margin-bottom:16px">🗂️</div>
+      <div style="font-size:16px;font-weight:700;margin-bottom:8px">Aucun historique</div>
+      <div style="font-size:13px;color:var(--muted);line-height:1.6">Les périodes archivées apparaîtront ici.</div>
+    </div>`;
+
+  return`
+    <div style="padding:0 20px">
+      <div class="lbl" style="margin-bottom:14px">${cur().history.length} période(s) archivée(s)</div>
+      ${cur().history.map(p=>{
+        const open=D.openPeriod===p.id;
+        const saved=Math.round(p.weeks.reduce((s,w)=>s+(w.remaining>0?w.remaining:0),0)*100)/100;
+        return`
+        <div style="background:var(--card);border-radius:20px;margin-bottom:12px;overflow:hidden">
+          <div style="padding:16px 18px;display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="togglePeriod('${p.id}')">
+            <div>
+              <div style="font-size:14px;font-weight:700">${p.label}</div>
+              <div style="font-size:11px;color:var(--muted);margin-top:3px">Archivé le ${p.archivedAt} · ${p.weeks.length} semaines</div>
+            </div>
+            <div style="text-align:right">
+              <div style="font-family:'DM Mono',monospace;font-weight:700;font-size:15px;color:${saved>0?'#22c55e':saved<0?'#ef4444':'#555'}">${saved>0?'+':''}${isKcal?saved.toFixed(0):saved.toFixed(2)}<span style="font-size:10px"> ${c.sym}</span></div>
+              <div style="font-size:10px;color:var(--muted);margin-top:2px">${open?'▲':'▼'} ${c.savingsSub}</div>
+            </div>
+          </div>
+          ${open?`
+          <div style="border-top:1px solid var(--border);overflow-x:auto">
+            <table style="width:100%;border-collapse:collapse;font-size:12px">
+              <thead><tr>
+                <th style="padding:8px 12px;text-align:left;color:var(--muted);font-size:10px;text-transform:uppercase;border-bottom:1px solid var(--border)">Semaine</th>
+                <th style="padding:8px 12px;text-align:right;color:var(--muted);font-size:10px;text-transform:uppercase;border-bottom:1px solid var(--border)">${c.budgetLbl}</th>
+                <th style="padding:8px 12px;text-align:right;color:var(--muted);font-size:10px;text-transform:uppercase;border-bottom:1px solid var(--border)">${c.spentLbl}</th>
+                <th style="padding:8px 12px;text-align:right;color:var(--muted);font-size:10px;text-transform:uppercase;border-bottom:1px solid var(--border)">${isKcal?c.deficitLbl:'Reste'}</th>
+              </tr></thead>
+              <tbody>
+                ${p.weeks.map(w=>`
+                <tr>
+                  <td style="padding:9px 12px;border-bottom:1px solid #1a1a1a">
+                    <div style="font-size:11px;font-weight:600;color:${w.color}">${w.label}</div>
+                    ${w.dateRange?`<div style="font-size:10px;color:#3a3a3a">📅 ${w.dateRange}</div>`:''}
+                  </td>
+                  <td style="padding:9px 12px;border-bottom:1px solid #1a1a1a;text-align:right;font-family:'DM Mono',monospace">${isKcal?w.effective.toFixed(0):w.effective.toFixed(0)}</td>
+                  <td style="padding:9px 12px;border-bottom:1px solid #1a1a1a;text-align:right;font-family:'DM Mono',monospace">${isKcal?w.spent.toFixed(0):w.spent.toFixed(2)}</td>
+                  <td style="padding:9px 12px;border-bottom:1px solid #1a1a1a;text-align:right;font-family:'DM Mono',monospace;font-weight:600;color:${w.remaining>0?'#22c55e':w.remaining<0?'#ef4444':'#555'}">
+                    ${w.remaining>0?'+':''}${isKcal?w.remaining.toFixed(0):w.remaining.toFixed(2)}
+                  </td>
+                </tr>`).join('')}
+                <tr style="background:#1a1a1a">
+                  <td style="padding:10px 12px;font-weight:700">Total</td>
+                  <td style="padding:10px 12px;text-align:right;font-family:'DM Mono',monospace;font-weight:700">${isKcal?p.totalBudget.toFixed(0):p.totalBudget.toFixed(0)}</td>
+                  <td style="padding:10px 12px;text-align:right;font-family:'DM Mono',monospace;font-weight:700">${isKcal?p.totalSpent.toFixed(0):p.totalSpent.toFixed(2)}</td>
+                  <td style="padding:10px 12px;text-align:right;font-family:'DM Mono',monospace;font-weight:700;color:${saved>0?'#22c55e':saved<0?'#ef4444':'#555'}">
+                    ${saved>0?'+':''}${isKcal?saved.toFixed(0):saved.toFixed(2)}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>`:''}
+        </div>`;
+      }).join('')}
+    </div>`;
+}
+
+// ─── INIT ───
+hydrate();
+render();
+</script>
+</body>
+</html>
